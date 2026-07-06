@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación de Licuefacción · Grupo 03 · 1ACI0707</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-eyebrow">PROYECTO DE SIMULACIÓN GEOTÉCNICA · 1ACI0707 INGENIERÍA DE CIMENTACIONES · 2026-10</div>
+    <div class="header-row">
+      <div>
+        <h1>Potencial de Licuefacción<span class="accent-dot">.</span></h1>
+        <p class="header-sub">Análisis por estrato del Factor de Seguridad contra licuefacción (Seed–Idriss / NCEER 2001) — Grupo 03</p>
+      </div>
+      <div class="header-badge" id="fs-min-badge">
+        <span class="badge-label">FSlic mínimo</span>
+        <span class="badge-value" id="fs-min-value">—</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- ===== SIDEBAR : INPUTS ===== -->
+    <aside class="sidebar">
+
+      <section class="panel">
+        <h2 class="panel-title"><span class="panel-index">01</span> Parámetros globales</h2>
+        <div class="field-grid">
+          <label class="field">
+            <span>Magnitud momento M<sub>w</sub></span>
+            <input type="number" id="in-mw" step="0.1" value="8.0">
+          </label>
+          <label class="field">
+            <span>Aceleración máxima a<sub>max</sub>/g</span>
+            <input type="number" id="in-amax" step="0.01" value="0.42">
+          </label>
+          <label class="field">
+            <span>Nivel freático N.F. (m)</span>
+            <input type="number" id="in-nf" step="0.1" value="1.0">
+          </label>
+          <label class="field">
+            <span>Peso específico del agua γw (kN/m³)</span>
+            <input type="number" id="in-gammaw" step="0.01" value="9.81">
+          </label>
+          <label class="field">
+            <span>Factor de energía C<sub>E</sub></span>
+            <input type="number" id="in-ce" step="0.05" value="1.00">
+          </label>
+          <label class="field">
+            <span>Carga total de la estructura (ton)</span>
+            <input type="number" id="in-load" step="1" value="1250">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title-row">
+          <h2 class="panel-title"><span class="panel-index">02</span> Perfil estratigráfico</h2>
+          <button class="btn-ghost" id="btn-add-row">+ Estrato</button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="strata-table" id="strata-table">
+            <thead>
+              <tr>
+                <th>Top<br>(m)</th>
+                <th>Base<br>(m)</th>
+                <th>Suelo</th>
+                <th>N<sub>SPT</sub></th>
+                <th>Finos<br>%</th>
+                <th>γ<sub>nat</sub></th>
+                <th>γ<sub>sat</sub></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="strata-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-secondary" id="btn-load-preset">Cargar Caso Grupo 03</button>
+          <button class="btn-primary" id="btn-calculate">Calcular Licuefacción →</button>
+        </div>
+      </section>
+
+      <section class="panel note-panel">
+        <p><strong>Nota metodológica:</strong> FSlic = (CRR<sub>7.5</sub>·MSF·Kσ)/CSR, método simplificado de Seed–Idriss (NCEER, Youd et al. 2001; Boulanger &amp; Idriss 2004). Los asentamientos post-licuación son una estimación simplificada con fines educativos.</p>
+      </section>
+    </aside>
+
+    <!-- ===== MAIN : VISUALS + RESULTS ===== -->
+    <main class="content">
+
+      <section class="panel" id="empty-state">
+        <div class="empty-illustration">▤</div>
+        <p>Carga el caso del Grupo 03 o edita el perfil estratigráfico, luego presiona <strong>"Calcular Licuefacción"</strong> para generar el log de sondaje, el gráfico de FSlic y los asentamientos estimados.</p>
+      </section>
+
+      <section class="panel results-hidden" id="visual-panel">
+        <h2 class="panel-title"><span class="panel-index">03</span> Log de sondaje &amp; FSlic vs. profundidad</h2>
+        <div class="visual-row">
+          <div class="borehole-wrap">
+            <div class="mini-caption">Perfil de suelo</div>
+            <svg id="svg-borehole"></svg>
+          </div>
+          <div class="chart-wrap">
+            <div class="mini-caption">Factor de Seguridad (FSlic)</div>
+            <svg id="svg-fschart"></svg>
+          </div>
+          <div class="legend-col">
+            <div class="legend-item"><span class="swatch swatch-red"></span> Licua (FS &lt; 1.0)</div>
+            <div class="legend-item"><span class="swatch swatch-green"></span> No licua (FS ≥ 1.0)</div>
+            <div class="legend-item"><span class="swatch swatch-gray"></span> No susceptible (cohesivo/denso)</div>
+            <div class="legend-item legend-line"><span class="line-sample"></span> Nivel freático</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel results-hidden" id="table-panel">
+        <h2 class="panel-title"><span class="panel-index">04</span> Resultados por estrato</h2>
+        <div class="table-scroll">
+          <table class="results-table" id="results-table">
+            <thead>
+              <tr>
+                <th>Estrato</th>
+                <th>Prof. media (m)</th>
+                <th>σv (kPa)</th>
+                <th>σv' (kPa)</th>
+                <th>rd</th>
+                <th>CSR</th>
+                <th>(N1)60cs</th>
+                <th>CRR7.5</th>
+                <th>Kσ</th>
+                <th>FSlic</th>
+                <th>Estado</th>
+                <th>ε<sub>v</sub> (%)</th>
+                <th>Asent. (cm)</th>
+              </tr>
+            </thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
+        </div>
+        <div class="summary-row">
+          <div class="summary-card summary-danger">
+            <span class="summary-label">Espesor total licuable</span>
+            <span class="summary-value" id="sum-thickness">—</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">Asentamiento post-licuación total</span>
+            <span class="summary-value" id="sum-settlement">—</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">Profundidad crítica (última capa que licua)</span>
+            <span class="summary-value" id="sum-depth">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel results-hidden" id="solutions-panel">
+        <h2 class="panel-title"><span class="panel-index">05</span> Comparación de soluciones de cimentación profunda</h2>
+        <div class="solutions-grid">
+
+          <div class="solution-card">
+            <div class="solution-head">
+              <span class="solution-tag">Mejora del terreno</span>
+              <h3>Columnas de grava</h3>
+            </div>
+            <p class="solution-desc">Densifican el suelo granular suelto y aceleran la disipación de presión de poros, elevando (N1)60cs in-situ.</p>
+            <div class="solution-metrics" id="grava-metrics"></div>
+          </div>
+
+          <div class="solution-card solution-card-navy">
+            <div class="solution-head">
+              <span class="solution-tag">Cimentación profunda</span>
+              <h3>Grupo de pilotes</h3>
+            </div>
+            <p class="solution-desc">Transfieren la carga a través de la zona licuable hacia el estrato competente (método SPT de Meyerhof).</p>
+            <div class="solution-metrics" id="pilotes-metrics"></div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="app-footer">
+    Simulación educativa — Ingeniería de Cimentaciones · UPC 2026-10 · Métodos: Seed–Idriss (NCEER 2001), Boulanger &amp; Idriss (2004), Meyerhof (SPT)
+  </footer>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
